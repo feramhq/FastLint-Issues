@@ -149,7 +149,6 @@ export default {
 	medeval: 'medieval',
 	medevil: 'medieval',
 	mideval: 'medieval',
-	momento: 'memento',
 	millenium: 'millennium',
 	milennium: 'millennium',
 	miniture: 'miniature',

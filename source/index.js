@@ -34,30 +34,28 @@ fsp.mkdir(reposPath)
 
 
 function improveRandomRepo () {
-	let oneYearAgo = new Date()
-	oneYearAgo.setUTCFullYear(oneYearAgo.getUTCFullYear() - 1)
-	oneYearAgo = oneYearAgo.toISOString().slice(0, 10)
-
-	let oneDayAgo = new Date()
-	oneDayAgo.setUTCDate(oneDayAgo.getUTCDate() - 1)
-	oneDayAgo = oneDayAgo.toISOString().slice(0, 10)
-
-	let randomDaysAgo = new Date()
-	randomDaysAgo.setUTCDate(
-		randomDaysAgo.getUTCDate() - Math.trunc(Math.random() * 100)
+	const maxDaysAgo = 300
+	let randomMoment = new Date()
+	randomMoment.setUTCDate(
+		randomMoment.getUTCDate() - Math.trunc(Math.random() * maxDaysAgo)
 	)
-	randomDaysAgo = randomDaysAgo.toISOString().slice(0, 10)
+	let randomMomentOffset = new Date(randomMoment)
+	randomMomentOffset.setUTCHours(randomMomentOffset.getUTCHours() + 2)
+
+	const dateRangeString = 'pushed:"' +
+		randomMoment.toISOString() +
+		' .. ' +
+		randomMomentOffset.toISOString() +
+		'"'
+
+	// Smaller than 10 Mb
+	const searchString = 'size:<10000 ' + dateRangeString
 
 	const config = Object.assign(
 		{
 			uri: apiUri + '/search/repositories',
 			qs: {
-				q: [
-					// 'Parallel.js is a tiny library for multi-core processing in Javascript',
-					'size:<10000', // Smaller than 10 Mb
-					`pushed:${randomDaysAgo}`
-				].join(' '),
-				// sort: 'updated',
+				q: searchString,
 				per_page: 1,
 			}
 		},
@@ -190,7 +188,7 @@ function improveRandomRepo () {
 					chalk.yellow('- Development Mode => Stop execution')
 				)
 			}
-			console.error(chalk.red(error.stack))
+			console.error(chalk.red(error))
 		})
 		.then(() => console.log('\n'))
 		.then(improveRandomRepo)
