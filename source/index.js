@@ -4,6 +4,7 @@ import fsp from 'fs-promise'
 import request from 'request-promise'
 import nodegit, {Clone, Signature, Remote, Cred} from 'nodegit'
 import _ from 'lodash'
+import chalk from 'chalk'
 
 import fixTypos from './fixTypos'
 
@@ -76,7 +77,7 @@ function improveRandomRepo () {
 			return _.sample(searchObject.items)
 		})
 		.then(repoObject => {
-			console.log('Repo: ' + repoObject.html_url)
+			console.log(chalk.cyan('Repo: ' + repoObject.html_url))
 			hoistedRepoObject = repoObject
 			return Clone.clone(
 				repoObject.html_url,
@@ -182,12 +183,14 @@ function improveRandomRepo () {
 		))
 		.catch(error => {
 			if (error.message === 'unfixable') {
-				return console.log('- Nothing to fix')
+				return console.log(chalk.red('- Nothing to fix'))
 			}
 			if (error.message === 'development mode') {
-				return console.log('- Development Mode => Stop execution')
+				return console.log(
+					chalk.yellow('- Development Mode => Stop execution')
+				)
 			}
-			console.error(error)
+			console.error(chalk.red(error.stack))
 		})
 		.then(() => console.log('\n'))
 		.then(improveRandomRepo)

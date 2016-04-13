@@ -1,8 +1,10 @@
 import path from 'path'
 
 import fsp from 'fs-promise'
-import typoFixMap from './typoFixMap'
 import {Signature} from 'nodegit'
+import chalk from 'chalk'
+
+import typoFixMap from './typoFixMap'
 
 export default (repo, tree, signature) => new Promise((resolve, reject) => {
 	console.log('- Tree of head commit')
@@ -36,9 +38,10 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 						(match, p1, p2) => p1 + typoFixMap[typo] + p2
 					)
 
-					resultString += `\n- Fix typo "${typo
-						}" => "${typoFixMap[typo]
-						}" in ${filePath}\n- `
+					resultString += '\n' + chalk.green(
+						`- Fix typo "${typo}" => "${typoFixMap[typo]}" ` +
+						`in ${filePath}`) +
+						'\n- '
 				}
 
 				if (!isChanged) {
@@ -67,7 +70,7 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 			})
 			.catch(error => {
 				if (error.message === 'ignore') { return }
-				console.error(error.stack)
+				console.error(chalk.red(error.stack))
 			})
 		)
 	})
