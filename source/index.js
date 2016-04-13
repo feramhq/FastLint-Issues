@@ -56,6 +56,7 @@ function improveRandomRepo () {
 			uri: apiUri + '/search/repositories',
 			qs: {
 				q: searchString,
+				sort: 'updated',
 				per_page: 1,
 			}
 		},
