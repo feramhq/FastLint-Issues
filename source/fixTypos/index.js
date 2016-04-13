@@ -13,9 +13,8 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 	walker.on('error', error => reject(error))
 	walker.on('entry', entry => {
 		const filePath = entry.path()
-		// const notFixable = 'File %s has no fixable typos'
 
-		if (!(/\.md$/.test(filePath))) { return }
+		if ((/\.(png|jpg|jpeg|gif|pdf|exe)$/.test(filePath))) { return }
 
 		editPromises.push(entry
 			.getBlob()
