@@ -27,6 +27,7 @@ const disclaimer = fsp.readFileSync(
 	path.join(rootPath, 'disclaimer.md'),
 	'utf8'
 )
+const developmentMode = (process.env.NODE_ENV !== 'production')
 
 fsp.mkdir(reposPath)
 
@@ -99,6 +100,9 @@ function improveRandomRepo () {
 			const changedFiles = matchedFiles.filter(file => Boolean(file))
 			if (!changedFiles.length) {
 				throw new Error('unfixable')
+			}
+			if (developmentMode) {
+				throw new Error('development mode')
 			}
 
 			return request.post(Object.assign(
@@ -179,6 +183,9 @@ function improveRandomRepo () {
 		.catch(error => {
 			if (error.message === 'unfixable') {
 				return console.log('- Nothing to fix')
+			}
+			if (error.message === 'development mode') {
+				return console.log('- Development Mode => Stop execution')
 			}
 			console.error(error)
 		})
