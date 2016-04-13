@@ -2,7 +2,7 @@ import path from 'path'
 
 import fsp from 'fs-promise'
 import request from 'request-promise'
-import nodegit, {Clone, Signature} from 'nodegit'
+import nodegit, {Clone, Signature, Remote, Cred} from 'nodegit'
 import _ from 'lodash'
 
 import fixTypos from './fixTypos'
@@ -17,10 +17,16 @@ const defaults = {
 		'User-Agent': 'feram'
 	}
 }
+const userName = 'adius'
 const author = 'Adrian Sieber'
 const commiter = 'Adrian Sieber'
 const email = 'mail@adriansieber.com'
-const reposPath = path.resolve(__dirname, '../repos')
+const rootPath = path.resolve(__dirname, '..')
+const reposPath = path.join(rootPath, 'repos')
+const disclaimer = fsp.readFileSync(
+	path.join(rootPath, 'disclaimer.md'),
+	'utf8'
+)
 
 fsp.mkdir(reposPath)
 
@@ -45,9 +51,9 @@ function improveRandomRepo () {
 			uri: apiUri + '/search/repositories',
 			qs: {
 				q: [
-					'Parallel.js is a tiny library for multi-core processing in Javascript',
-					// 'size:<10000', // Smaller than 10 Mb
-					// `pushed:${randomDaysAgo}`
+					// 'Parallel.js is a tiny library for multi-core processing in Javascript',
+					'size:<10000', // Smaller than 10 Mb
+					`pushed:${randomDaysAgo}`
 				].join(' '),
 				// sort: 'updated',
 				per_page: 1,
@@ -56,6 +62,7 @@ function improveRandomRepo () {
 		defaults
 	)
 	let hoistedGitRepo
+	let hoistedRepoObject
 
 	request(config)
 		.then(searchResponse => {
@@ -69,14 +76,14 @@ function improveRandomRepo () {
 		})
 		.then(repoObject => {
 			console.log('Repo: ' + repoObject.html_url)
-
+			hoistedRepoObject = repoObject
 			return Clone.clone(
 				repoObject.html_url,
 				path.join(reposPath, repoObject.full_name)
 			)
 		})
 		.then(gitRepo => {
-			console.log('    - Clone')
+			console.log('- Clone')
 			if (gitRepo.isEmpty()) {
 				throw new Error('Repo is empty')
 			}
@@ -88,9 +95,95 @@ function improveRandomRepo () {
 			const signature = Signature.now(author, email)
 			return fixTypos(hoistedGitRepo, tree, signature)
 		})
-		.then(console.log)
-		.catch(error => console.error(error.stack))
-		// .then(improveRandomRepo)
+		.then((matchedFiles) => {
+			const changedFiles = matchedFiles.filter(file => Boolean(file))
+			if (!changedFiles.length) {
+				throw new Error('unfixable')
+			}
+
+			return request.post(Object.assign(
+				{
+					uri: `${apiUri}/repos/${hoistedRepoObject.full_name}/forks`
+				},
+				defaults
+			))
+		})
+		.then(forkResponse => {
+			console.log('- Initialized forking')
+
+			const forkObject = JSON.parse(forkResponse)
+			// console.dir(forkObject, {depth: null, colors: true})
+
+			return new Promise((resolve, reject) => {
+				// Poll until fork was created
+				function pollRepo () {
+					setTimeout(
+						() => request
+							.head({uri: forkObject.html_url})
+							.then(headResponse => {
+								if (headResponse.status === '200 OK') {
+									resolve(forkObject)
+								}
+								else {
+									console.log(
+										'Fork not yet created.',
+										'Trying again …'
+									)
+									pollRepo()
+								}
+							})
+						,
+						2000
+					)
+				}
+				pollRepo()
+			})
+		})
+		.then(fork => {
+			console.log('- Fork is available')
+
+			Remote.setPushurl(hoistedGitRepo, 'origin', fork.html_url)
+
+			return hoistedGitRepo.getRemote('origin')
+		})
+		.then(remote => remote.push(
+			['refs/heads/master:refs/heads/master'],
+			{
+				callbacks: {
+					credentials: (url) => Cred.userpassPlaintextNew(
+						userName,
+						defaults.auth.pass
+					)
+				}
+			}
+		))
+		.then(() => {
+			console.log('- Fork was updated')
+			return request.post(Object.assign(
+				{
+					uri: `${apiUri}/repos/${hoistedRepoObject.full_name}/pulls`,
+					json: true,
+					body: {
+						title: 'Minor fixes',
+						body: disclaimer,
+						head: userName + ':master',
+						base: 'master',
+					},
+				},
+				defaults
+			))
+		})
+		.then(mergeRequestResponse => console.log(
+			'- Merge-request was created: ' + mergeRequestResponse.html_url
+		))
+		.catch(error => {
+			if (error.message === 'unfixable') {
+				return console.log('- Nothing to fix')
+			}
+			console.error(error)
+		})
+		.then(() => console.log('\n'))
+		.then(improveRandomRepo)
 }
 
 improveRandomRepo()

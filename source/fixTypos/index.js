@@ -5,8 +5,9 @@ import typoFixMap from './typoFixMap'
 import {Signature} from 'nodegit'
 
 export default (repo, tree, signature) => new Promise((resolve, reject) => {
-	console.log('    - Tree of head commit')
-	let resultString = '    - '
+	console.log('- Tree of head commit')
+	let resultString = '- '
+	const editPromises = []
 
 	const walker = tree.walk(true)
 	walker.on('error', error => reject(error))
@@ -16,7 +17,7 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 
 		if (!(/\.md$/.test(filePath))) { return }
 
-		entry
+		editPromises.push(entry
 			.getBlob()
 			.then(blob => {
 				let fileContent = blob.toString()
@@ -36,9 +37,9 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 						(match, p1, p2) => p1 + typoFixMap[typo] + p2
 					)
 
-					resultString += `\n    - Fix typo "${typo
+					resultString += `\n- Fix typo "${typo
 						}" => "${typoFixMap[typo]
-						}" in ${filePath}\n    - `
+						}" in ${filePath}\n- `
 				}
 
 				if (!isChanged) {
@@ -58,7 +59,6 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 				return repoIndex.writeTree()
 			})
 			.then(() => {
-
 				return repo.createCommitOnHead(
 					[filePath],
 					signature,
@@ -70,9 +70,16 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 				if (error.message === 'ignore') { return }
 				console.error(error.stack)
 			})
+		)
 	})
 	walker.on('end', () => {
-		resolve(resultString)
+		resolve(Promise
+			.all(editPromises)
+			.then(matchedFiles => {
+				console.log(resultString)
+				return matchedFiles
+			})
+		)
 	})
 	walker.start()
 })
