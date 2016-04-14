@@ -15,3 +15,8 @@ pull requests to fix them.
 - Code smells
 - Missing files (license, readme)
 - …
+
+
+## Related
+
+- http://bamos.github.io/girl

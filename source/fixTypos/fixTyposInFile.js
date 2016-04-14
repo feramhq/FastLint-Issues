@@ -3,6 +3,7 @@ import path from 'path'
 import chalk from 'chalk'
 import {Signature} from 'nodegit'
 import fsp from 'fs-promise'
+import isBinary from 'is-binary'
 
 import replaceTypos from './replaceTypos'
 import replaceCssTypos from './replaceCssTypos'
@@ -16,19 +17,19 @@ export default (entry, repo, signature) => {
 			let fileContent = blob.toString()
 			let isFixed = false
 
-			if (!(/\.(png|jpg|jpeg|gif|pdf|exe|mp4)$/.test(filePath))) {
+			if (!isBinary(fileContent)) {
 				const newFileConent = replaceTypos(fileContent, filePath)
 				if (newFileConent) {
 					isFixed = true
 					fileContent = newFileConent
 				}
-			}
 
-			if (/\.(css|styl|scss|sass|less)$/.test(filePath)) {
-				const newFileConent = replaceCssTypos(fileContent, filePath)
-				if (newFileConent) {
-					isFixed = true
-					fileContent = newFileConent
+				if (/\.(css|styl|scss|sass|less)$/.test(filePath)) {
+					const newFileConent = replaceCssTypos(fileContent, filePath)
+					if (newFileConent) {
+						isFixed = true
+						fileContent = newFileConent
+					}
 				}
 			}
 

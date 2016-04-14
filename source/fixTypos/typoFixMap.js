@@ -1,10 +1,7 @@
-export default {
-	// Coding specific typos
-	javascirpt: 'javascript',
-	coed: 'code',
+// Based on list of commonly misspelled words from
+// https://en.wikipedia.org/wiki/Commonly_misspelled_English_words
 
-	// List of commonly misspelled words taken from
-	// https://en.wikipedia.org/wiki/Commonly_misspelled_English_words
+export default {
 	absense: 'absence',
 	absance: 'absence',
 	acceptible: 'acceptable',
@@ -62,6 +59,7 @@ export default {
 	cemetary: 'cemetery',
 	changable: 'changeable',
 	cheif: 'chief',
+	coed: 'code',
 	collaegue: 'colleague',
 	collegue: 'colleague',
 	collectable: 'collectible',
@@ -135,6 +133,7 @@ export default {
 	innoculate: 'inoculate',
 	inteligence: 'intelligence',
 	intelligance: 'intelligence',
+	javascirpt: 'javascript',
 	jewelery: 'jewelry (UK: jewellery)',
 	kernal: 'kernel',
 	liesure: 'leisure',
