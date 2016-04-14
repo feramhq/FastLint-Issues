@@ -4,48 +4,40 @@ import chalk from 'chalk'
 import {Signature} from 'nodegit'
 import fsp from 'fs-promise'
 
-import typoFixMap from './typoFixMap'
+import replaceTypos from './replaceTypos'
+import replaceCssTypos from './replaceCssTypos'
 
 export default (entry, repo, signature) => {
 	const filePath = entry.path()
-
-	if ((/\.(png|jpg|jpeg|gif|pdf|exe)$/.test(filePath))) { return }
 
 	return entry
 		.getBlob()
 		.then(blob => {
 			let fileContent = blob.toString()
-			let isChanged = false
+			let isFixed = false
 
-			for (const typo in typoFixMap) {
-				const typoRegex = new RegExp(
-					`(\\W)${typo}(\\W)`,
-					'gi'
-				)
-				if (!typoRegex.test(fileContent)) { continue }
-
-				isChanged = true
-
-				fileContent = fileContent.replace(
-					typoRegex,
-					(match, p1, p2) => p1 + typoFixMap[typo] + p2
-				)
-
-				console.log()
-				process.stdout.write(chalk.green(
-					`${typo} => ${typoFixMap[typo]} in ${filePath}`
-				))
+			if (!(/\.(png|jpg|jpeg|gif|pdf|exe|mp4)$/.test(filePath))) {
+				const newFileConent = replaceTypos(fileContent, filePath)
+				if (newFileConent) {
+					isFixed = true
+					fileContent = newFileConent
+				}
 			}
 
-			if (!isChanged) {
+			if (/\.(css|styl|scss|sass|less)$/.test(filePath)) {
+				const newFileConent = replaceCssTypos(fileContent, filePath)
+				if (newFileConent) {
+					isFixed = true
+					fileContent = newFileConent
+				}
+			}
+
+			if (!isFixed) {
 				process.stdout.write('.')
-				throw new Error('ignore')
-			}
-			else {
-				console.log()
+				throw new Error('goto end')
 			}
 
-			return fsp.writeFile(
+			fsp.writeFile(
 				path.join(repo.workdir(), filePath),
 				fileContent
 			)
@@ -60,10 +52,10 @@ export default (entry, repo, signature) => {
 			[filePath],
 			signature,
 			signature,
-			`Fix typos`
+			`Fix typos in ` + path.basename(filePath)
 		))
 		.catch(error => {
-			if (error.message === 'ignore') { return }
+			if (error.message === 'goto end') { return }
 			console.error(chalk.red(error.stack))
 		})
 }

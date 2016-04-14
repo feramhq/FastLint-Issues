@@ -7,9 +7,7 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 	const walker = tree.walk(true)
 	walker.on('error', error => reject(error))
 	walker.on('entry', (entry) => {
-		fileEditPromises.push(
-			fixTyposInFile(entry, repo, signature)
-		)
+		fileEditPromises.push(fixTyposInFile(entry, repo, signature))
 	})
 	walker.on('end', () => {
 		resolve(Promise

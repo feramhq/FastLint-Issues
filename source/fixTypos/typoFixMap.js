@@ -49,7 +49,7 @@ export default {
 	begining: 'beginning',
 	beleive: 'believe',
 	bellweather: 'bellwether',
-	bouy: 'buoy',
+	// bouy: 'buoy', // Re-add when font-awesome 5 was released
 	bouyant: 'buoyant',
 	buisness: 'business',
 	calender: 'calendar',
