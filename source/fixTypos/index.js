@@ -1,7 +1,6 @@
 import fixTyposInFile from './fixTyposInFile'
 
 export default (repo, tree, signature) => new Promise((resolve, reject) => {
-	console.log('- Tree of head commit')
 	const fileEditPromises = []
 
 	const walker = tree.walk(true)

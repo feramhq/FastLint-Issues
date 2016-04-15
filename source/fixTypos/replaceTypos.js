@@ -29,9 +29,12 @@ export default (fileContent, filePath) => {
 					) +
 					p2
 
-				console.log(chalk.green(
-					String.raw `"${match}" => "${replacement}" in ${filePath}`
-				))
+				console.log(
+					chalk.yellow(JSON.stringify(match)) +
+					' => ' +
+					chalk.green(JSON.stringify(replacement)) +
+					chalk.gray(' in ' + filePath)
+				)
 				return replacement
 			}
 		)

@@ -91,23 +91,28 @@ export default function improveRepo (options = {}) {
 			return _.sample(searchObject.items)
 		})
 		.then(repoObject => {
-			console.log(chalk.cyan('Repo: ' + repoObject.html_url))
+			console.log(chalk.blue.underline('Repo: ' + repoObject.html_url))
 			hoistedRepoObject = repoObject
+
+			process.stdout.write('- Clone')
 			return Clone.clone(
 				repoObject.html_url,
 				path.join(reposPath, repoObject.full_name)
 			)
 		})
 		.then(gitRepo => {
-			console.log('- Clone')
+			console.log(chalk.green(' ✔'))
 			if (gitRepo.isEmpty()) {
 				throw new Error('Repo is empty')
 			}
 			hoistedGitRepo = gitRepo
+
+			process.stdout.write('- Get head commit')
 			return gitRepo.getHeadCommit()
 		})
 		.then(commit => commit.getTree())
 		.then(tree => {
+			console.log(chalk.green(' ✔'))
 			const signature = Signature.now(author, email)
 			return fixTypos(hoistedGitRepo, tree, signature)
 		})
@@ -202,7 +207,7 @@ export default function improveRepo (options = {}) {
 			}
 			if (error.message === 'dry run') {
 				return console.log(
-					chalk.yellow('- Dry run => Stop execution')
+					chalk.cyan('- Dry run => Stop execution')
 				)
 			}
 			console.error(chalk.red(
