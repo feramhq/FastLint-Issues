@@ -17,7 +17,10 @@ export default (entry, repo, signature) => {
 			let fileContent = blob.toString()
 			let isFixed = false
 
-			if (!isBinary(fileContent)) {
+			if (!isBinary(fileContent) &&
+				!/\.min\.(css|js|html)$/.test(filePath) &&
+				!/\.(css|js)\.map$/.test(filePath)
+			) {
 				const newFileConent = replaceTypos(fileContent, filePath)
 				if (newFileConent) {
 					isFixed = true

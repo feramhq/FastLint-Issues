@@ -136,7 +136,8 @@ export default function improveRepo (options = {}) {
 
 	function fixBugsInRepo (repoObject) {
 
-		console.log(chalk.blue.underline('Repo: ' + repoObject.html_url))
+		console.log(chalk.blue.underline(repoObject.full_name))
+		console.log(chalk.gray(`(${repoObject.html_url})`))
 
 		process.stdout.write('- Clone')
 
