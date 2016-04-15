@@ -3,7 +3,7 @@ import util from 'util'
 
 import fsp from 'fs-promise'
 import request from 'request-promise'
-import nodegit, {Clone, Signature, Remote, Cred} from 'nodegit'
+import nodegit, {Clone, Signature, Remote, Cred, Repository} from 'nodegit'
 import _ from 'lodash'
 import chalk from 'chalk'
 
@@ -99,7 +99,10 @@ function getRandomRepoPromise (options) {
 }
 
 
+
 export default function improveRepo (options = {}) {
+
+	let hoistedGitRepo
 
 	// Remove undefined keys
 	options = JSON.parse(JSON.stringify(options))
@@ -110,7 +113,8 @@ export default function improveRepo (options = {}) {
 		options,
 	)
 
-	const {dry, user, password, author, commiter, email, apiUri} = options
+	const {dry, user, password, author,
+		commiter, email, apiUri, submit} = options
 
 	options.apiDefaults = {
 		headers: {
@@ -130,125 +134,144 @@ export default function improveRepo (options = {}) {
 		repoPromise = getRandomRepoPromise(options)
 	}
 
-	let hoistedGitRepo
-	let hoistedRepoObject
+	function fixBugsInRepo (repoObject) {
 
-	repoPromise
-		.then(repoObject => {
-			console.log(chalk.blue.underline('Repo: ' + repoObject.html_url))
-			hoistedRepoObject = repoObject
+		console.log(chalk.blue.underline('Repo: ' + repoObject.html_url))
 
-			process.stdout.write('- Clone')
-			return Clone.clone(
+		process.stdout.write('- Clone')
+
+		return Clone
+			.clone(
 				repoObject.html_url,
 				path.join(reposPath, repoObject.full_name)
 			)
-		})
-		.then(gitRepo => {
-			console.log(chalk.green(' ✔'))
-			if (gitRepo.isEmpty()) {
-				throw new Error('Repo is empty')
-			}
-			hoistedGitRepo = gitRepo
-
-			process.stdout.write('- Get head commit')
-			return gitRepo.getHeadCommit()
-		})
-		.then(commit => commit.getTree())
-		.then(tree => {
-			console.log(chalk.green(' ✔'))
-			const signature = Signature.now(author, email)
-			return fixTypos(hoistedGitRepo, tree, signature)
-		})
-		.then(changedFiles => {
-			if (!changedFiles) {
-				throw new Error('unfixable')
-			}
-			if (dry) {
-				throw new Error('dry run')
-			}
-
-			process.stdout.write('- Initialize fork')
-			return request.post(Object.assign(
-				{
-					uri: `${apiUri}/repos/${hoistedRepoObject.full_name}/forks`
-				},
-				options.apiDefaults,
-			))
-		})
-		.then(forkResponse => {
-			console.log(chalk.green(' ✔'))
-
-			const forkObject = JSON.parse(forkResponse)
-			// console.dir(forkObject, {depth: null, colors: true})
-
-			process.stdout.write('- Wait for fork to be available')
-			return new Promise((resolve, reject) => {
-				// Poll until fork was created
-				function pollRepo () {
-					setTimeout(
-						() => request
-							.head({uri: forkObject.html_url})
-							.then(headResponse => {
-								if (headResponse.status === '200 OK') {
-									resolve(forkObject)
-								}
-								else {
-									process.stdout.write(' .')
-									pollRepo()
-								}
-							})
-						,
-						2000
-					)
+			.then(gitRepo => {
+				console.log(chalk.green(' ✔'))
+				if (gitRepo.isEmpty()) {
+					throw new Error('Repo is empty')
 				}
-				pollRepo()
+				hoistedGitRepo = gitRepo
+
+				process.stdout.write('- Get head commit')
+				return gitRepo.getHeadCommit()
 			})
-		})
-		.then(fork => {
-			console.log(chalk.green(' ✔'))
-
-			process.stdout.write('- Push repo to Fork')
-			Remote.setPushurl(hoistedGitRepo, 'origin', fork.html_url)
-			return hoistedGitRepo.getRemote('origin')
-		})
-		.then(remote => remote.push(
-			['refs/heads/master:refs/heads/master'],
-			{
-				callbacks: {
-					credentials: () => Cred.userpassPlaintextNew(user, password)
+			.then(commit => commit.getTree())
+			.then(tree => {
+				console.log(chalk.green(' ✔'))
+				const signature = Signature.now(author, email)
+				return fixTypos(hoistedGitRepo, tree, signature)
+			})
+			.then(filesHaveChanged => {
+				if (!filesHaveChanged) {
+					throw new Error('unfixable')
 				}
-			}
-		))
-		.then(() => {
-			console.log(chalk.green(' ✔'))
+				return repoObject
+			})
+	}
 
-			process.stdout.write('- Create merge request')
-			return request.post(Object.assign(
+	function forkAndCreateMergeRequest (repoObject) {
+		process.stdout.write('- Initialize fork')
+
+		return request
+			.post(Object.assign(
 				{
-					uri: `${apiUri}/repos/${hoistedRepoObject.full_name}/pulls`,
-					json: true,
-					body: {
-						title: 'Minor fixes',
-						body: disclaimer,
-						head: user + ':master',
-						base: 'master',
-					},
+					uri: `${apiUri}/repos/${repoObject.full_name}/forks`
 				},
 				options.apiDefaults,
 			))
+			.then(forkResponse => {
+				console.log(chalk.green(' ✔'))
+
+				const forkObject = JSON.parse(forkResponse)
+				// console.dir(forkObject, {depth: null, colors: true})
+
+				process.stdout.write('- Wait for fork to be available')
+				return new Promise((resolve, reject) => {
+					// Poll until fork was created
+					function pollRepo () {
+						setTimeout(
+							() => request
+								.head({uri: forkObject.html_url})
+								.then(headResponse => {
+									if (headResponse.status === '200 OK') {
+										resolve(forkObject)
+									}
+									else {
+										process.stdout.write(' .')
+										pollRepo()
+									}
+								})
+							,
+							2000
+						)
+					}
+					pollRepo()
+				})
+			})
+			.then(fork => {
+				console.log(chalk.green(' ✔'))
+
+				const repoPromise = hoistedGitRepo ?
+					Promise.resolve(hoistedGitRepo) :
+					Repository.open(path.join(reposPath, repoObject.full_name))
+
+				return repoPromise
+					.then(gitRepo => {
+						process.stdout.write('- Push repo to Fork')
+						Remote.setPushurl(gitRepo, 'origin', fork.html_url)
+						return gitRepo.getRemote('origin')
+					})
+			})
+			.then(remote => remote.push(
+				['refs/heads/master:refs/heads/master'],
+				{
+					callbacks: {
+						credentials: () =>
+							Cred.userpassPlaintextNew(user, password)
+					}
+				}
+			))
+			.then(() => {
+				console.log(chalk.green(' ✔'))
+
+				process.stdout.write('- Create merge request')
+				return request.post(Object.assign(
+					{
+						uri: `${apiUri}/repos/${repoObject.full_name
+							}/pulls`,
+						json: true,
+						body: {
+							title: 'Minor fixes',
+							body: disclaimer,
+							head: user + ':master',
+							base: 'master',
+						},
+					},
+					options.apiDefaults,
+				))
+			})
+			.then(mergeRequestResponse => console.log(
+				chalk.green(' ✔ ') + chalk.gray(mergeRequestResponse.html_url)
+			))
+	}
+
+	repoPromise
+		.then(repoObject => {
+			if (!submit) {
+				return fixBugsInRepo(repoObject)
+			}
+			return repoObject
 		})
-		.then(mergeRequestResponse => console.log(
-			chalk.green(' ✔ ') + chalk.gray(mergeRequestResponse.html_url)
-		))
+		.then(repoObject => {
+			if (dry) {
+				chalk.cyan('- Dry run => Stop execution')
+				return
+			}
+			return forkAndCreateMergeRequest(repoObject)
+		})
 		.catch(error => {
 			if (error.message === 'unfixable') {
 				return console.log(chalk.red('- Nothing to fix'))
-			}
-			if (error.message === 'dry run') {
-				return console.log(
-					chalk.cyan('- Dry run => Stop execution')
-				)
 			}
 			console.error(chalk.red(
 				util.inspect(error, {depth: null})

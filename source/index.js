@@ -4,10 +4,6 @@ import improveRepo from './improveRepo'
 export default (argv) => {
 	const options = yargs
 		.options({
-			'dry': {
-				describe: 'Do not push & do not create merge request for changes',
-				type: 'boolean',
-			},
 			'user': {
 				demand: true,
 				describe: 'Feram acts in behalf of this user',
@@ -16,6 +12,16 @@ export default (argv) => {
 			'password': {
 				describe: 'Password for the user',
 				type: 'string',
+			},
+			'dry': {
+				describe: 'Do not push ' +
+					'and do not create merge request for changes',
+				type: 'boolean',
+			},
+			'submit': {
+				describe: 'Push already created local fixes ' +
+					'and create merge request for them',
+				type: 'boolean',
 			},
 		})
 		.usage('feram <repo-url>')
