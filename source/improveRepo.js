@@ -4,10 +4,11 @@ import util from 'util'
 import fsp from 'fs-promise'
 import request from 'request-promise'
 import nodegit, {Clone, Signature, Remote, Cred, Repository} from 'nodegit'
-import _ from 'lodash'
 import chalk from 'chalk'
 
 import fixTypos from './fixTypos'
+import getRepoPromiseByUrl from './getRepoPromise'
+import getRandomRepoPromise from './getRandomRepoPromise'
 
 const rootPath = path.resolve(__dirname, '..')
 const reposPath = path.join(rootPath, 'repos')
@@ -25,79 +26,6 @@ const defaults = {
 }
 
 fsp.mkdir(reposPath)
-
-
-function getRepoPromiseByUrl (repoUrl, options) {
-	const matches = repoUrl.match(/^(.+):(.+)\/(.+)$/)
-
-	if (!matches) {
-		throw new Error('No valid repo-url was provided')
-	}
-
-	const targetRepo = {
-		provider: matches[1],
-		user: matches[2],
-		name: matches[3],
-	}
-
-	if (targetRepo.provider !== 'github') {
-		throw new Error('GitHub is currently the only supported provider')
-	}
-
-	const config = Object.assign(
-		{
-			uri: `${options.apiUri}/repos/${targetRepo.user
-				}/${targetRepo.name}`,
-		},
-		options.apiDefaults,
-	)
-
-	return request(config)
-		.then(response => JSON.parse(response))
-}
-
-function getRandomRepoPromise (options) {
-	const maxDaysAgo = 300
-	let randomMoment = new Date()
-	randomMoment.setUTCDate(
-		randomMoment.getUTCDate() - Math.trunc(Math.random() * maxDaysAgo)
-	)
-	let randomMomentOffset = new Date(randomMoment)
-	randomMomentOffset.setUTCHours(randomMomentOffset.getUTCHours() + 2)
-
-	const dateRangeString = 'pushed:"' +
-		randomMoment.toISOString() +
-		' .. ' +
-		randomMomentOffset.toISOString() +
-		'"'
-
-	// Smaller than 10 Mb
-	const searchString = `size:<10000 ${dateRangeString}`
-
-	const config = Object.assign(
-		{
-			uri: `${options.apiUri}/search/repositories`,
-			qs: {
-				q: searchString,
-				sort: 'updated',
-				per_page: 1,
-			}
-		},
-		options.apiDefaults,
-	)
-
-	return request(config)
-		.then(searchResponse => {
-			const searchObject = JSON.parse(searchResponse)
-
-			if (!searchObject.total_count) {
-				throw new Error('No repos were found')
-			}
-
-			return _.sample(searchObject.items)
-		})
-}
-
 
 
 export default function improveRepo (options = {}) {
