@@ -17,9 +17,6 @@ const disclaimer = fsp.readFileSync(
 )
 const defaults = {
 	apiUri: 'https://api.github.com',
-	headers: {
-		'User-Agent': 'feram',
-	},
 	user: 'adius',
 	password: process.env.FERAM_PASSWORD,
 	author: 'Adrian Sieber',
@@ -30,25 +27,36 @@ const defaults = {
 fsp.mkdir(reposPath)
 
 
-export default function improveRepo (options = {}) {
+function getRepoPromiseByUrl (repoUrl, options) {
+	const matches = repoUrl.match(/^(.+):(.+)\/(.+)$/)
 
-	// Remove undefined keys
-	options = JSON.parse(JSON.stringify(options))
-
-	options = Object.assign(
-		{},
-		defaults,
-		options,
-	)
-
-	const {dry, user, password, author, commiter, email, apiUri} = options
-
-	const apiDefaults = {
-		headers: options.headers,
-		auth: {user, pass: password}
+	if (!matches) {
+		throw new Error('No valid repo-url was provided')
 	}
 
+	const targetRepo = {
+		provider: matches[1],
+		user: matches[2],
+		name: matches[3],
+	}
 
+	if (targetRepo.provider !== 'github') {
+		throw new Error('GitHub is currently the only supported provider')
+	}
+
+	const config = Object.assign(
+		{
+			uri: `${options.apiUri}/repos/${targetRepo.user
+				}/${targetRepo.name}`,
+		},
+		options.apiDefaults,
+	)
+
+	return request(config)
+		.then(response => JSON.parse(response))
+}
+
+function getRandomRepoPromise (options) {
 	const maxDaysAgo = 300
 	let randomMoment = new Date()
 	randomMoment.setUTCDate(
@@ -64,21 +72,19 @@ export default function improveRepo (options = {}) {
 		'"'
 
 	// Smaller than 10 Mb
-	const searchString = 'size:<10000 ' + dateRangeString
+	const searchString = `size:<10000 ${dateRangeString}`
 
 	const config = Object.assign(
 		{
-			uri: apiUri + '/search/repositories',
+			uri: `${options.apiUri}/search/repositories`,
 			qs: {
 				q: searchString,
 				sort: 'updated',
 				per_page: 1,
 			}
 		},
-		apiDefaults,
+		options.apiDefaults,
 	)
-	let hoistedGitRepo
-	let hoistedRepoObject
 
 	return request(config)
 		.then(searchResponse => {
@@ -90,6 +96,44 @@ export default function improveRepo (options = {}) {
 
 			return _.sample(searchObject.items)
 		})
+}
+
+
+export default function improveRepo (options = {}) {
+
+	// Remove undefined keys
+	options = JSON.parse(JSON.stringify(options))
+
+	options = Object.assign(
+		{},
+		defaults,
+		options,
+	)
+
+	const {dry, user, password, author, commiter, email, apiUri} = options
+
+	options.apiDefaults = {
+		headers: {
+			'User-Agent': 'feram',
+		},
+		auth: {user, pass: password},
+	}
+
+	const repoUrl = options._[2]
+	let config = {}
+	let repoPromise
+
+	if (repoUrl) {
+		repoPromise = getRepoPromiseByUrl(repoUrl, options)
+	}
+	else { // Use random repo
+		repoPromise = getRandomRepoPromise(options)
+	}
+
+	let hoistedGitRepo
+	let hoistedRepoObject
+
+	repoPromise
 		.then(repoObject => {
 			console.log(chalk.blue.underline('Repo: ' + repoObject.html_url))
 			hoistedRepoObject = repoObject
@@ -116,7 +160,7 @@ export default function improveRepo (options = {}) {
 			const signature = Signature.now(author, email)
 			return fixTypos(hoistedGitRepo, tree, signature)
 		})
-		.then((matchedFiles) => {
+		.then(matchedFiles => {
 			const changedFiles = matchedFiles.filter(file => Boolean(file))
 			if (!changedFiles.length) {
 				throw new Error('unfixable')
@@ -130,7 +174,7 @@ export default function improveRepo (options = {}) {
 				{
 					uri: `${apiUri}/repos/${hoistedRepoObject.full_name}/forks`
 				},
-				apiDefaults,
+				options.apiDefaults,
 			))
 		})
 		.then(forkResponse => {
@@ -195,7 +239,7 @@ export default function improveRepo (options = {}) {
 						base: 'master',
 					},
 				},
-				apiDefaults,
+				options.apiDefaults,
 			))
 		})
 		.then(mergeRequestResponse => console.log(
@@ -215,5 +259,9 @@ export default function improveRepo (options = {}) {
 			))
 		})
 		.then(() => console.log('\n'))
-		.then(() => improveRepo(options))
+		.then(() => {
+			if (!repoUrl) {
+				return improveRepo(options)
+			}
+		})
 }

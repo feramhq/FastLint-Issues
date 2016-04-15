@@ -10,11 +10,11 @@ export default (fileContent, filePath) => {
 	let isChanged = false
 
 	for (const typo in typoFixMap) {
-		const typoRegex = new RegExp(
-			`(\\W)${typo}(\\W)`,
-			'gi'
-		)
-		if (!typoRegex.test(fileContent)) { continue }
+		const typoRegex = new RegExp(`(\\W)${typo}(\\W)`, 'gi')
+
+		if (!typoRegex.test(fileContent)) {
+			continue
+		}
 
 		isChanged = true
 
@@ -31,7 +31,7 @@ export default (fileContent, filePath) => {
 
 				console.log(
 					chalk.yellow(JSON.stringify(match)) +
-					' => ' +
+					' -> ' +
 					chalk.green(JSON.stringify(replacement)) +
 					chalk.gray(' in ' + filePath)
 				)
@@ -40,5 +40,5 @@ export default (fileContent, filePath) => {
 		)
 	}
 
-	return (!isChanged) ? null : fileContent
+	return isChanged ? fileContent : null
 }

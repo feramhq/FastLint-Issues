@@ -21,8 +21,16 @@ export default (argv) => {
 		.usage('feram <repo-url>')
 		.example(
 			'feram --dry --user octocat --password 12345',
+
 			'Feram gets a random repo, fixes it on behalf of octocat, ' +
 			'but doesn\'t push the changes',
+		)
+		.example(
+			'feram --user octocat --password 12345 github:twbs/bootstrap',
+
+			'Feram gets repo "bootstrap" from user "twbs" on github.com, ' +
+			'fixes it on behalf of octocat, commits and pushes the changes ' +
+			'and creates a merge request',
 		)
 		.help()
 		.parse(argv)

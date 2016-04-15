@@ -5,11 +5,11 @@ export default (fileContent, filePath) => {
 	let isChanged = false
 
 	for (const typo in cssTypoFixes) {
-		const typoRegex = new RegExp(
-			`(\\W)${typo}(\\W)`,
-			'g'
-		)
-		if (!typoRegex.test(fileContent)) { continue }
+		const typoRegex = new RegExp(`(\\W)${typo}(\\W)`, 'g')
+
+		if (!typoRegex.test(fileContent)) {
+			continue
+		}
 
 		isChanged = true
 
@@ -17,13 +17,16 @@ export default (fileContent, filePath) => {
 			typoRegex,
 			(match, p1, p2) => {
 				const replacement = p1 + cssTypoFixes[typo] + p2
-				console.log(chalk.green(
-					`"${match}" => "${replacement}" in ${filePath}`
-				))
+				console.log(
+					chalk.yellow(JSON.stringify(match)) +
+					' -> ' +
+					chalk.green(JSON.stringify(replacement)) +
+					chalk.gray(' in ' + filePath)
+				)
 				return replacement
 			}
 		)
 	}
 
-	return (!isChanged) ? null : fileContent
+	return isChanged ? fileContent : null
 }
