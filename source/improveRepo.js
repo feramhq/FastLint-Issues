@@ -160,9 +160,8 @@ export default function improveRepo (options = {}) {
 			const signature = Signature.now(author, email)
 			return fixTypos(hoistedGitRepo, tree, signature)
 		})
-		.then(matchedFiles => {
-			const changedFiles = matchedFiles.filter(file => Boolean(file))
-			if (!changedFiles.length) {
+		.then(changedFiles => {
+			if (!changedFiles) {
 				throw new Error('unfixable')
 			}
 			if (dry) {
@@ -217,10 +216,7 @@ export default function improveRepo (options = {}) {
 			['refs/heads/master:refs/heads/master'],
 			{
 				callbacks: {
-					credentials: (url) => Cred.userpassPlaintextNew(
-						user,
-						options.password,
-					)
+					credentials: () => Cred.userpassPlaintextNew(user, password)
 				}
 			}
 		))
@@ -255,7 +251,7 @@ export default function improveRepo (options = {}) {
 				)
 			}
 			console.error(chalk.red(
-				util.inspect(error, {showHidden: true, depth: null})
+				util.inspect(error, {depth: null})
 			))
 		})
 		.then(() => console.log('\n'))
