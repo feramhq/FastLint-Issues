@@ -20,9 +20,14 @@ const defaults = {
 	apiUri: 'https://api.github.com',
 	user: 'adius',
 	password: process.env.FERAM_PASSWORD,
-	author: 'Adrian Sieber',
-	commiter: 'Adrian Sieber',
-	email: 'mail@adriansieber.com',
+	author: {
+		name: 'Adrian Sieber',
+		email: 'mail@adriansieber.com',
+	},
+	commiter: {
+		name: 'Feram',
+		email: 'feram@adriansieber.com',
+	}
 }
 
 fsp.mkdir(reposPath)
@@ -87,8 +92,15 @@ export default function improveRepo (options = {}) {
 			.then(commit => commit.getTree())
 			.then(tree => {
 				console.log(chalk.green(' ✔'))
-				const signature = Signature.now(author, email)
-				return fixTypos(hoistedGitRepo, tree, signature)
+				return fixTypos({
+					repo: hoistedGitRepo,
+					tree,
+					authorSignature: Signature.now(author.name, author.email),
+					commiterSignature: Signature.now(
+						commiter.name,
+						commiter.email
+					),
+				})
 			})
 			.then(filesHaveChanged => {
 				if (!filesHaveChanged) {
@@ -116,23 +128,23 @@ export default function improveRepo (options = {}) {
 
 				process.stdout.write('- Wait for fork to be available')
 				return new Promise((resolve, reject) => {
+					function checkForkAvailability () {
+						return request
+							.head({uri: forkObject.html_url})
+							.then(headResponse => {
+								if (headResponse.status === '200 OK') {
+									resolve(forkObject)
+								}
+								else {
+									process.stdout.write(' .')
+									pollRepo()
+								}
+							})
+					}
+
 					// Poll until fork was created
 					function pollRepo () {
-						setTimeout(
-							() => request
-								.head({uri: forkObject.html_url})
-								.then(headResponse => {
-									if (headResponse.status === '200 OK') {
-										resolve(forkObject)
-									}
-									else {
-										process.stdout.write(' .')
-										pollRepo()
-									}
-								})
-							,
-							2000
-						)
+						setTimeout(checkForkAvailability, 2000)
 					}
 					pollRepo()
 				})
@@ -162,6 +174,8 @@ export default function improveRepo (options = {}) {
 			))
 			.then(() => {
 				console.log(chalk.green(' ✔'))
+
+				// TODO: Check if repo is already pushed
 
 				process.stdout.write('- Create merge request')
 				return request.post(Object.assign(
