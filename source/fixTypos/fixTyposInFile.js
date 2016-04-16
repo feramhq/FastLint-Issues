@@ -6,7 +6,53 @@ import fsp from 'fs-promise'
 import isBinary from 'is-binary'
 
 import replaceTypos from './replaceTypos'
-import replaceCssTypos from './replaceCssTypos'
+
+import generalTypoMap from '../typoMaps/general'
+import styleTypoMap from '../typoMaps/style'
+import scriptTypoMap from '../typoMaps/script'
+
+
+function isHumanReadable (filePath, fileContent) {
+	return !isBinary(fileContent) &&
+		!/\.min\.(css|js|html)$/.test(filePath) &&
+		!/\.(css|js)\.map$/.test(filePath)
+}
+
+function isStyle (filePath) {
+	return /\.(css|styl|scss|sass|less)$/.test(filePath)
+}
+
+function isScript (filePath) {
+	const regex = new RegExp(
+		'\\.(' +
+		'javascript|js|jsx|' +
+		'ecmascript|es|es2015|' +
+		'typescript|ts|' +
+		'coffeescript|coffee' +
+		'livescript|ls' +
+		')$'
+	)
+	regex.test(filePath)
+}
+
+const typoMapObjects = [
+	{
+		name: 'general',
+		map: generalTypoMap,
+		test: () => true,
+	},
+	{
+		name: 'css',
+		map: styleTypoMap,
+		test: isStyle,
+	},
+	{
+		name: 'js',
+		map: scriptTypoMap,
+		test: isScript,
+	},
+]
+
 
 export default (entry, repo, signature) => {
 	const filePath = entry.path()
@@ -17,28 +63,27 @@ export default (entry, repo, signature) => {
 			let fileContent = blob.toString()
 			let isFixed = false
 
-			if (!isBinary(fileContent) &&
-				!/\.min\.(css|js|html)$/.test(filePath) &&
-				!/\.(css|js)\.map$/.test(filePath)
-			) {
-				const newFileConent = replaceTypos(fileContent, filePath)
+			if  (!isHumanReadable(filePath, fileContent)) {
+				throw new Error('not human readable')
+			}
+
+			typoMapObjects.forEach(mapObject => {
+				if (!mapObject.test(filePath)) { return }
+
+				const newFileConent = replaceTypos(
+					fileContent,
+					filePath,
+					mapObject.map,
+				)
 				if (newFileConent) {
 					isFixed = true
 					fileContent = newFileConent
 				}
-
-				if (/\.(css|styl|scss|sass|less)$/.test(filePath)) {
-					const newFileConent = replaceCssTypos(fileContent, filePath)
-					if (newFileConent) {
-						isFixed = true
-						fileContent = newFileConent
-					}
-				}
-			}
+			})
 
 			if (!isFixed) {
 				process.stdout.write('.')
-				throw new Error('goto end')
+				throw new Error('nothing was fixed')
 			}
 
 			fsp.writeFile(
@@ -59,7 +104,10 @@ export default (entry, repo, signature) => {
 			`Fix typos in ` + path.basename(filePath)
 		))
 		.catch(error => {
-			if (error.message === 'goto end') { return }
+			if (['nothing was fixed', 'not human readable']
+				.indexOf(error.message) >= 0
+			) { return }
+
 			console.error(chalk.red(error.stack))
 		})
 }

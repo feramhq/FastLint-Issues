@@ -1,3 +1,5 @@
+// For css, styl, scss, sass and less
+
 export default {
 	aligne: 'align',
 	atachment: 'attachment',

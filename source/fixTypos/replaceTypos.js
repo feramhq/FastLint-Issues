@@ -1,15 +1,14 @@
 import chalk from 'chalk'
-import typoFixMap from './extendedMap'
 
 function isLowerCase (string) {
 	return string === string.toLowerCase() &&
 		string !== string.toUpperCase()
 }
 
-export default (fileContent, filePath) => {
+export default (fileContent, filePath, typoMap) => {
 	let isChanged = false
 
-	for (const typo in typoFixMap) {
+	for (const typo in typoMap) {
 		const typoRegex = new RegExp(`(\\W)${typo}(\\W)`, 'gi')
 
 		if (!typoRegex.test(fileContent)) {
@@ -23,9 +22,9 @@ export default (fileContent, filePath) => {
 			(match, p1, p2) => {
 				const replacement = p1 +
 					(isLowerCase(match[1]) ?
-						typoFixMap[typo] :
-						typoFixMap[typo].slice(0, 1).toUpperCase() +
-					 	typoFixMap[typo].slice(1)
+						typoMap[typo] :
+						typoMap[typo].slice(0, 1).toUpperCase() +
+					 	typoMap[typo].slice(1)
 					) +
 					p2
 

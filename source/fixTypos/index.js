@@ -17,6 +17,7 @@ export default (repo, tree, signature) => new Promise((resolve, reject) => {
 	})
 	walker.on('end', () => {
 		resolve(fileEditPromiseChain
+			.then(() => console.log())
 			.then(() => commitWasCreated)
 		)
 	})
