@@ -6,6 +6,12 @@ import request from 'request-promise'
 import nodegit, {Clone, Signature, Remote, Cred, Repository} from 'nodegit'
 import chalk from 'chalk'
 import fixTypos from 'fix-typos'
+import fixPackageFile from 'fix-package-file'
+
+const modules = [
+	fixTypos,
+	fixPackageFile,
+]
 
 import getRepoPromiseByUrl from './getRepoPromise'
 import getRandomRepoPromise from './getRandomRepoPromise'
@@ -23,7 +29,7 @@ const defaults = {
 		name: 'Feram',
 		email: 'feram@adriansieber.com',
 	},
-	commiter: {
+	committer: {
 		name: 'Feram',
 		email: 'feram@adriansieber.com',
 	}
@@ -46,7 +52,7 @@ export default function improveRepo (options = {}) {
 	)
 
 	const {dry, user, password, author,
-		commiter, email, apiUri, submit} = options
+		committer, email, apiUri, submit} = options
 
 	options.apiDefaults = {
 		headers: {
@@ -91,15 +97,33 @@ export default function improveRepo (options = {}) {
 			.then(commit => commit.getTree())
 			.then(fileTree => {
 				console.log(chalk.green(' ✔'))
-				return fixTypos({
-					repo: hoistedGitRepo,
-					fileTree,
-					authorSignature: Signature.now(author.name, author.email),
-					commiterSignature: Signature.now(
-						commiter.name,
-						commiter.email
-					),
-				})
+
+				function toPromiseChain (promiseChain, fixingModule) {
+					return promiseChain
+						.then(previousFilesChanged =>
+							fixingModule({
+								repo: hoistedGitRepo,
+								fileTree,
+								authorSignature: Signature.now(
+									author.name,
+									author.email,
+								),
+								committerSignature: Signature.now(
+									committer.name,
+									committer.email,
+								),
+							})
+							.then(currentFilesChanged =>
+								previousFilesChanged || currentFilesChanged
+							)
+						)
+				}
+
+				// Call all fixing modules
+				return modules.reduce(
+					toPromiseChain,
+					Promise.resolve(false)
+				)
 			})
 			.then(filesHaveChanged => {
 				if (!filesHaveChanged) {
@@ -211,9 +235,13 @@ export default function improveRepo (options = {}) {
 			if (error.message === 'unfixable') {
 				return console.log(chalk.red('- Nothing to fix'))
 			}
-			console.error('\n' + chalk.red(
-				util.inspect(error.error || error, {depth: null})
-			))
+			console.error('\n')
+			if (error.error) {
+				chalk.red(util.inspect(error.error, {depth: null}))
+			}
+			else {
+				console.error(chalk.red(error.stack))
+			}
 		})
 		.then(() => console.log('\n'))
 		.then(() => {
