@@ -1,6 +1,9 @@
 #! /usr/bin/env node
 
-require('babel-register')
+require('babel-register')({
+	ignore: fileName =>
+		/.*node_modules.*/.test(fileName) && !/.*fix-typos.*/.test(fileName)
+})
 
 const feram = require('./index').default
 

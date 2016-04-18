@@ -5,8 +5,8 @@ import fsp from 'fs-promise'
 import request from 'request-promise'
 import nodegit, {Clone, Signature, Remote, Cred, Repository} from 'nodegit'
 import chalk from 'chalk'
+import fixTypos from 'fix-typos'
 
-import fixTypos from './fixTypos'
 import getRepoPromiseByUrl from './getRepoPromise'
 import getRandomRepoPromise from './getRandomRepoPromise'
 
@@ -89,11 +89,11 @@ export default function improveRepo (options = {}) {
 				return gitRepo.getHeadCommit()
 			})
 			.then(commit => commit.getTree())
-			.then(tree => {
+			.then(fileTree => {
 				console.log(chalk.green(' ✔'))
 				return fixTypos({
 					repo: hoistedGitRepo,
-					tree,
+					fileTree,
 					authorSignature: Signature.now(author.name, author.email),
 					commiterSignature: Signature.now(
 						commiter.name,
