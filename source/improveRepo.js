@@ -18,11 +18,10 @@ const disclaimer = fsp.readFileSync(
 )
 const defaults = {
 	apiUri: 'https://api.github.com',
-	user: 'adius',
 	password: process.env.FERAM_PASSWORD,
 	author: {
-		name: 'Adrian Sieber',
-		email: 'mail@adriansieber.com',
+		name: 'Feram',
+		email: 'feram@adriansieber.com',
 	},
 	commiter: {
 		name: 'Feram',
@@ -137,16 +136,12 @@ export default function improveRepo (options = {}) {
 								}
 								else {
 									process.stdout.write(' .')
-									pollRepo()
+									checkForkAvailability()
 								}
 							})
 					}
 
-					// Poll until fork was created
-					function pollRepo () {
-						setTimeout(checkForkAvailability, 2000)
-					}
-					pollRepo()
+					checkForkAvailability()
 				})
 			})
 			.then(fork => {
@@ -216,8 +211,8 @@ export default function improveRepo (options = {}) {
 			if (error.message === 'unfixable') {
 				return console.log(chalk.red('- Nothing to fix'))
 			}
-			console.error(chalk.red(
-				util.inspect(error, {depth: null})
+			console.error('\n' + chalk.red(
+				util.inspect(error.error || error, {depth: null})
 			))
 		})
 		.then(() => console.log('\n'))
