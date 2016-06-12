@@ -8,16 +8,12 @@ checks for various possible problems and finally makes
 pull requests to fix them.
 
 
-## Possible checks:
+## Roadmap
 
-- Typos
-- Missing fields in package files
-- Broken links
-- Code smells
-- Missing files (license, readme)
-- …
+Feram currently gets a major overhaul.
+As soon as the next stable version is ready
+we will update this repo accordingly.
 
-
-## Related
-
-- http://bamos.github.io/girl
+In the meantime you can stay up to date
+by signing up for the Feram newsletter on [feram.co](http://feram.co)
+of by following Feram on [Twitter](https://twitter.com/ferambot)

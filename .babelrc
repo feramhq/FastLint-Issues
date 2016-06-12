@@ -1,8 +1,0 @@
-{
-	"presets" : [
-		"babel-preset-es2015"
-	],
-	"plugins": [
-		"syntax-trailing-function-commas"
-	]
-}
