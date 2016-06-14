@@ -1,5 +1,7 @@
 # Feram
 
+[![Join the chat at https://gitter.im/feramhq/feram](https://badges.gitter.im/feramhq/feram.svg)](https://gitter.im/feramhq/feram?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 The **F**ork, **e**dit, **r**equest **a**nd **m**erge Bot.
 (Feram also means wild in latin)
 
