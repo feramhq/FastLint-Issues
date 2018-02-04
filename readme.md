@@ -3,6 +3,13 @@
 ![Open issues][open]
 ![Closed issues][closed]
 
+Feram automatically finds bugs in your merge requests
+with more than [20 state of the art code anlysis tools][tools]
+and directly provides patches you can accept.
+
+No manual code editing necessary!
+
+[tools]: https://feram.io/features
 [open]:
   https://img.shields.io/github/issues-raw/feramhq/feram.svg?style=for-the-badge&colorB=brightgreen
 [closed]:
@@ -12,7 +19,9 @@
 ![Screenshot](./screenshot.png)
 
 
-This is the public issue tracker for [feram.io].
+---
+
+**This repo currently hosts the public issue tracker for [feram.io].**
 
 Create new issues or upvote existing ones
 to help us build the product you want! 😊
