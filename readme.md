@@ -8,12 +8,17 @@ with more than [20 state of the art code anlysis tools][tools]
 and directly provides patches you can accept.
 
 No manual code editing necessary!
+[![Activate on GitHub][activate]][gh-app]
 
-[tools]: https://feram.io/features
-[open]:
-  https://img.shields.io/github/issues-raw/feramhq/feram.svg?style=for-the-badge&colorB=brightgreen
+
+[activate]:
+  https://img.shields.io/badge/Activate%20on%20GitHub-free-brightgreen.svg?style=flat
 [closed]:
   https://img.shields.io/github/issues-closed-raw/feramhq/feram.svg?style=for-the-badge&colorB=brightgreen
+[gh-app]: https://github.com/apps/feram
+[open]:
+  https://img.shields.io/github/issues-raw/feramhq/feram.svg?style=for-the-badge
+[tools]: https://feram.io/features
 
 
 ![Screenshot](./screenshot.png)
