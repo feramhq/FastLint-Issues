@@ -1,7 +1,7 @@
 # Feram
 
-![Open issues][open]
-![Closed issues][closed]
+[![Open issues][open-img]][open-issues]
+[![Closed issues][closed-img]][closed-issues]
 
 Feram automatically finds bugs in your merge requests
 with more than [20 state of the art code anlysis tools][tools]
@@ -13,11 +13,13 @@ No manual code editing necessary!
 
 [activate]:
   https://img.shields.io/badge/Activate%20on%20GitHub-free-brightgreen.svg?style=flat
-[closed]:
+[closed-img]:
   https://img.shields.io/github/issues-closed-raw/feramhq/feram.svg?style=for-the-badge&colorB=brightgreen
+[closed-issues]: https://github.com/feramhq/feram/issues?q=is%3Aissue+is%3Aclosed
 [gh-app]: https://github.com/apps/feram
-[open]:
+[open-img]:
   https://img.shields.io/github/issues-raw/feramhq/feram.svg?style=for-the-badge
+[open-issues]: https://github.com/feramhq/feram/issues
 [tools]: https://feram.io/features
 
 
